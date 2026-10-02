@@ -1204,7 +1204,11 @@ u32 _rtw_down_sema(_sema *sema)
 #endif
 }
 
+#ifdef PLATFORM_LINUX
+inline __noreturn void thread_exit(_completion *comp)
+#else
 inline void thread_exit(_completion *comp)
+#endif
 {
 #ifdef PLATFORM_LINUX
 	#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0)

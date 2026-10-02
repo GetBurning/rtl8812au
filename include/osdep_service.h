@@ -369,7 +369,9 @@ __inline static unsigned char _cancel_timer_ex(_timer *ptimer)
 {
 	u8 bcancelled;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0))
+	return timer_delete_sync(&ptimer->t);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
 	return del_timer_sync(&ptimer->t);
 #else
 	_cancel_timer(ptimer, &bcancelled);
@@ -387,7 +389,13 @@ static __inline void thread_enter(char *name)
 	printf("%s", "RTKTHREAD_enter");
 #endif
 }
+/* always ends in (kthread_)complete_and_exit on Linux; objtool on x86
+ * requires the noreturn at the call sites (mp_xmit_packet_thread etc.) */
+#ifdef PLATFORM_LINUX
+__noreturn void thread_exit(_completion *comp);
+#else
 void thread_exit(_completion *comp);
+#endif
 void _rtw_init_completion(_completion *comp);
 void _rtw_wait_for_comp_timeout(_completion *comp);
 void _rtw_wait_for_comp(_completion *comp);
