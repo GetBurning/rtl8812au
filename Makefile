@@ -1580,6 +1580,11 @@ $(MODULE_NAME)-y += $(_PHYDM_FILES)
 $(MODULE_NAME)-y += $(_BTC_FILES)
 $(MODULE_NAME)-y += $(_PLATFORM_FILES)
 
+# kbuild dropped EXTRA_CFLAGS (removed after 5.16); this driver's entire
+# flag block (includes/-I/defines/warnings) rides on it. Bridge it into
+# the modern variable; lazy = so platform blocks below are included.
+ccflags-y = $(EXTRA_CFLAGS)
+
 $(MODULE_NAME)-$(CONFIG_MP_INCLUDED) += core/rtw_mp.o
 
 ifeq ($(CONFIG_RTL8723B), y)
@@ -1595,7 +1600,11 @@ export CONFIG_RTL8812AU = m
 all: modules
 
 modules:
-	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(shell pwd) O="$(KBUILD_OUTPUT)" modules
+# 6.18+ kernel Makefile: `ifdef KBUILD_OUTPUT` is true even for an empty
+# O="" and then objtree := realpath("") = empty breaks the extmod build
+# (GNU make falls into builtin Modula-2 rules on scripts/Makefile.build).
+# Omit O= entirely unless KBUILD_OUTPUT is really set.
+	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(shell pwd) $(if $(KBUILD_OUTPUT),O="$(KBUILD_OUTPUT)") modules
 
 strip:
 	$(CROSS_COMPILE)strip $(MODULE_NAME).ko --strip-unneeded
